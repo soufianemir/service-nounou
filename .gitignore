@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+*.log
+.env
+storage
+data
+*.db
+tsconfig.tsbuildinfo
+prisma/dev.db
+prisma/dev.db-journal
+test-results
+playwright-report
+.playwright-artifacts-*

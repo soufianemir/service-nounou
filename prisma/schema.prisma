@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  PARENT
+  EMPLOYEE
+}
+
+enum TaskStatus {
+  TODO
+  DONE
+  SKIPPED
+}
+
+
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
+enum NotificationLevel {
+  INFO
+  ACTION
+  WARNING
+}
+
+model InAppNotification {
+  id           String            @id @default(cuid())
+  householdId   String
+  membershipId  String?
+  level        NotificationLevel @default(INFO)
+  title        String
+  body         String
+  href         String?
+  createdAt    DateTime          @default(now())
+  readAt       DateTime?
+
+  household    Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  membership   Membership?       @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([householdId, membershipId, createdAt])
+  @@index([readAt])
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  createdAt    DateTime    @default(now())
+  memberships  Membership[]
+}
+
+model Household {
+  id        String   @id @default(cuid())
+  name      String
+  timezone  String   @default("Europe/Paris")
+  createdAt DateTime @default(now())
+  notificationsEnabled   Boolean @default(true)
+  notifQuietStartHH       Int     @default(21)
+  notifQuietEndHH         Int     @default(8)
+  dailyDigestEnabled      Boolean @default(true)
+
+  // --- V1 Service Nounou (MVP) ---
+  // Weekly nanny work schedule, stored as JSON for fast iteration.
+  // Shape: Array<{ weekday: 0..6, enabled: boolean, start: "HH:MM", end: "HH:MM" }>
+  workScheduleWeekly      Json?
+  // Date exceptions (day off / custom hours).
+  // Shape: Array<{ dateYmd: "YYYY-MM-DD", off?: boolean, start?: "HH:MM", end?: "HH:MM", note?: string }>
+  workScheduleExceptions  Json?
+
+  memberships   Membership[]
+  taskTemplates TaskTemplate[]
+  tasks         Task[]
+  journal       JournalEntry[]
+  shoppingItems ShoppingItem[]
+  expenses      Expense[]
+  approvals     Approval[]
+  inAppNotifications InAppNotification[]
+  auditLogs     AuditLog[]
+}
+
+model Membership {
+  id          String         @id @default(cuid())
+  userId      String
+  householdId String
+  role        MembershipRole
+  permissions Json?
+  displayName String?
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  assignedTasks     Task[]        @relation("TaskAssignedTo")
+  journalAuthored   JournalEntry[] @relation("JournalAuthor")
+  approvalsRequested Approval[]   @relation("ApprovalRequestedBy")
+  approvalsApproved  Approval[]   @relation("ApprovalApprovedBy")
+  auditActor         AuditLog[]   @relation("AuditActor")
+  inAppNotifications InAppNotification[]
+
+  @@unique([userId, householdId])
+  @@index([householdId])
+}
+
+model TaskTemplate {
+  id               String   @id @default(cuid())
+  householdId      String
+  title            String
+  area             String?
+  defaultChecklist Json?
+  defaultFrequency String?
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+}
+
+model Task {
+  id             String     @id @default(cuid())
+  householdId    String
+  title          String
+  description    String?
+  assignedToId   String?
+  recurrenceRule String?
+  status         TaskStatus @default(TODO)
+  dueAt          DateTime?
+  createdAt      DateTime   @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  assignedTo Membership? @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  checklist ChecklistItem[]
+
+  @@index([householdId])
+  @@index([assignedToId])
+}
+
+model ChecklistItem {
+  id     String @id @default(cuid())
+  taskId String
+  label  String
+  done   Boolean @default(false)
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model JournalEntry {
+  id           String   @id @default(cuid())
+  householdId  String
+  date         DateTime
+  authorId     String?
+  summary      String
+  blockers     String?
+
+  // --- Meals MVP (stored on the daily journal entry) ---
+  breakfast    String?
+  lunch        String?
+  dinner       String?
+  substitutions String?
+  createdAt    DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  author    Membership? @relation("JournalAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@unique([householdId, date])
+  @@index([householdId])
+}
+
+model ShoppingItem {
+  id          String   @id @default(cuid())
+  householdId String
+  label       String
+  qty         String?
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  householdId String
+  amountCents Int
+  currency    String   @default("EUR")
+  note        String?
+  receiptPath String?
+  createdAt   DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+}
+
+model Approval {
+  id            String         @id @default(cuid())
+  householdId   String
+  type          String
+  targetId      String
+  status        ApprovalStatus @default(PENDING)
+  requestedById String?
+  approvedById  String?
+  createdAt     DateTime       @default(now())
+  decidedAt     DateTime?
+
+  household   Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  requestedBy Membership? @relation("ApprovalRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  approvedBy  Membership? @relation("ApprovalApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+}
+
+
+model AuditLog {
+  id                String   @id @default(cuid())
+  householdId        String
+  actorMembershipId  String?
+  action            String
+  entityType        String
+  entityId          String
+  before            Json?
+  after             Json?
+  createdAt         DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  actor     Membership? @relation("AuditActor", fields: [actorMembershipId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([createdAt])
+}
+
+

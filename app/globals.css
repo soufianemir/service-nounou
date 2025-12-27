@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 20% 98%;
+  --foreground: 222 47% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --primary: 222 47% 11%;
+  --primary-foreground: 210 20% 98%;
+
+  --secondary: 210 20% 96%;
+  --secondary-foreground: 222 47% 11%;
+
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  --accent: 210 20% 96%;
+  --accent-foreground: 222 47% 11%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 20% 98%;
+
+  --border: 214 18% 90%;
+  --input: 214 18% 90%;
+  --ring: 222 47% 11%;
+
+  --radius: 1rem;
+
+  color-scheme: light;
+}
+
+.dark {
+  --background: 225 25% 8%;
+  --foreground: 210 20% 98%;
+
+  --card: 225 22% 11%;
+  --card-foreground: 210 20% 98%;
+
+  --popover: 225 22% 11%;
+  --popover-foreground: 210 20% 98%;
+
+  --primary: 210 20% 98%;
+  --primary-foreground: 225 25% 8%;
+
+  --secondary: 225 18% 16%;
+  --secondary-foreground: 210 20% 98%;
+
+  --muted: 225 18% 16%;
+  --muted-foreground: 215 12% 70%;
+
+  --accent: 225 18% 16%;
+  --accent-foreground: 210 20% 98%;
+
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 210 20% 98%;
+
+  --border: 225 16% 20%;
+  --input: 225 16% 20%;
+  --ring: 210 20% 98%;
+
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  ::selection {
+    background: hsl(var(--foreground) / 0.12);
+  }
+}
+
+@layer utilities {
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: center;
+  }
+
+  .mask-fade {
+    -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 56%, transparent 78%);
+    mask-image: radial-gradient(ellipse at 50% 40%, black 56%, transparent 78%);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
