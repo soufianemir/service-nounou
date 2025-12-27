@@ -83,17 +83,19 @@ test("smoke: public, auth, app pages, apis", async ({ page }) => {
   await page.fill('input[name="password"]', password);
 
   await Promise.all([
-    page.waitForURL("**/app/planning", { timeout: 15000 }),
+    page.waitForURL("**/app", { timeout: 15000 }),
     page.getByRole("button", { name: /cr/i }).click()
   ]);
 
   await page.goto("/app");
-  await page.waitForURL("**/app/planning", { timeout: 15000 });
+  await page.waitForURL("**/app", { timeout: 15000 });
+  await expect(page.getByRole("heading", { name: /aujourd/i })).toBeVisible();
 
   const cookies = await page.context().cookies();
   expect(cookies.some((c) => c.name === sessionCookieName)).toBeTruthy();
 
   const navPages = [
+    { path: "/app", check: () => page.getByRole("heading", { name: /aujourd/i }) },
     { path: "/app/planning", check: () => page.getByRole("button", { name: "Jour", exact: true }) },
     { path: "/app/taches", check: () => page.getByRole("heading", { name: /taches/i }) },
     { path: "/app/journal", check: () => page.getByRole("heading", { name: /journal/i }) },

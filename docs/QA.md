@@ -5,7 +5,8 @@
 - Build and typecheck pass. Lint could not run due to interactive Next.js prompt.
 - Playwright smoke test passes (pages + APIs).
 - Playwright exhaustive UI test passes (parent + nounou).
-- Playwright full suite passes (smoke + exhaustive) when run sequentially.
+- Playwright full suite passes (smoke + exhaustive) when run sequentially (--workers=1).
+- /app is the Today dashboard (planning + tasks + courses); /app/planning remains calendar view.
 
 ## Environment
 - Local env file created: .env (copied from .env.example).
@@ -45,6 +46,49 @@
   - Command: $env:PLAYWRIGHT_PORT='3004'; npx.cmd playwright test --workers=1
   - Result: 2 passed.
 
+## Reported runtime errors (user logs)
+- Command: next start (reported during runtime; likely without a fresh build)
+- Logs:
+  - at <unknown> (C:\Users\s.mir\Projects\service-nounou_v2\.next\server\app\app\parametres\page.js:2:7687)
+  - at Object.<anonymous> (C:\Users\s.mir\Projects\service-nounou_v2\.next\server\app\app\parametres\page.js:2:7752) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [Array],
+    page: '/app/parametres'
+  }
+  - [Error: ENOENT: no such file or directory, open 'C:\Users\s.mir\Projects\service-nounou_v2\.next\routes-manifest.json'] {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\s.mir\\Projects\\service-nounou_v2\\.next\\routes-manifest.json',
+    page: '/app/courses'
+  }
+  - [Error: ENOENT: no such file or directory, open 'C:\Users\s.mir\Projects\service-nounou_v2\.next\routes-manifest.json'] {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\s.mir\\Projects\\service-nounou_v2\\.next\\routes-manifest.json'
+  }
+  - [Error: ENOENT: no such file or directory, open 'C:\Users\s.mir\Projects\service-nounou_v2\.next\routes-manifest.json'] {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\s.mir\\Projects\\service-nounou_v2\\.next\\routes-manifest.json'
+  }
+  - [Error: ENOENT: no such file or directory, open 'C:\Users\s.mir\Projects\service-nounou_v2\.next\routes-manifest.json'] {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\s.mir\\Projects\\service-nounou_v2\\.next\\routes-manifest.json',
+    page: '/app/courses'
+  }
+  - [Error: ENOENT: no such file or directory, open 'C:\Users\s.mir\Projects\service-nounou_v2\.next\routes-manifest.json'] {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\s.mir\\Projects\\service-nounou_v2\\.next\\routes-manifest.json'
+  }
+- Probable cause: next start was run without a fresh next build, so .next outputs were missing or stale.
+
 ## Routes tested (Playwright)
 Pages:
 - / (200)
@@ -57,7 +101,7 @@ Pages:
 - /politique-confidentialite (200)
 - /notre-role (200)
 - /cookies (200)
-- /app (redirect -> /app/planning)
+- /app (200)
 - /app/planning (200)
 - /app/taches (200)
 - /app/journal (200)
@@ -113,10 +157,10 @@ API:
 - Proof: npx.cmd tsc --noEmit (pass).
 
 6) Missing /app and navigation subroutes
-- Symptom: /app redirected after signup but no page existed; nav links /app/taches, /app/journal, /app/courses, /app/parametres, /app/notifications had no pages (404 risk).
-- Root cause: pages not implemented.
-- Fix: Add /app redirect page and minimal placeholder pages for missing routes.
-- Proof: npm.cmd run build lists /app and each subroute; Playwright smoke passes.
+- Symptom: "Aujourd'hui" duplicated Planning; /app had no day dashboard and subroutes showed WIP placeholders.
+- Root cause: /app redirected to /app/planning; missing content pages.
+- Fix: Implement /app as Today dashboard using existing planning/tasks/courses data; implement real list pages for taches/journal/courses/notifications/parametres.
+- Proof: npm.cmd run build (success); Playwright exhaustive UI test passes.
 
 7) Planning date navigation accessibility
 - Symptom: Prev/next buttons lacked accessible labels (hard to target and not screen-reader friendly).
@@ -124,18 +168,25 @@ API:
 - Fix: Add aria-labels for previous/next period.
 - Proof: npm.cmd run build (success); Playwright exhaustive UI test passes.
 
+8) Runtime missing build artifacts
+- Symptom: next start logs reported MODULE_NOT_FOUND for /app/parametres and ENOENT for .next/routes-manifest.json.
+- Root cause: start was executed without a fresh build or with stale .next output.
+- Fix: run npm.cmd run build before npm.cmd run start to regenerate .next.
+- Proof: npm.cmd run build (success); .next/routes-manifest.json present; Playwright full run passes.
+
 ## Business processes
 Executed end-to-end:
 - Parent signup + session creation -> access /app/planning.
+- Today dashboard view (planning segments + tasks + courses).
 - Weekly schedule update (base schedule edit + save).
 - Exception lifecycle (add + modify + delete + OFF cycle).
 - Task lifecycle (create + toggle done + reopen).
 - Employee invite (API) -> nounou login -> task marked done.
 
 Remaining to control (not implemented or no UI yet):
-- Journal entry creation/editing (no UI beyond placeholder page).
-- Shopping list items (no UI beyond placeholder page).
-- Notifications list/read/clear (no UI beyond placeholder page).
+- Journal entry creation/editing (read-only list exists, no create/edit UI).
+- Shopping list items (read-only list exists, no create/edit UI).
+- Notifications list/read/clear (read-only list exists, no clear UI).
 - Approvals flow (no UI).
 - Expenses flow (no UI).
 - Task deletion (no UI action; API only).

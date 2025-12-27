@@ -65,7 +65,7 @@ async function login(page: Page, email: string, password: string) {
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await Promise.all([
-    page.waitForURL("**/app/planning", { timeout: 15000 }),
+    page.waitForURL("**/app", { timeout: 15000 }),
     page.getByRole("button", { name: /connect/i }).click()
   ]);
 }
@@ -131,16 +131,22 @@ test("exhaustive UI (parent + nounou) and 5 business flows", async ({ page }) =>
   await page.fill('input[name="email"]', parentEmail);
   await page.fill('input[name="password"]', parentPassword);
   await Promise.all([
-    page.waitForURL("**/app/planning", { timeout: 15000 }),
+    page.waitForURL("**/app", { timeout: 15000 }),
     page.getByRole("button", { name: /cr/i }).click()
   ]);
 
   await page.goto("/app");
-  await page.waitForURL("**/app/planning", { timeout: 15000 });
+  await page.waitForURL("**/app", { timeout: 15000 });
+  await expect(page.getByRole("heading", { name: /aujourd/i })).toBeVisible();
+  await Promise.all([
+    page.waitForURL("**/app/planning"),
+    page.getByRole("button", { name: /voir le planning/i }).click()
+  ]);
 
   const cookies = await page.context().cookies();
   expect(cookies.some((c) => c.name === sessionCookieName)).toBeTruthy();
 
+  await page.goto("/app/planning");
   await page.getByRole("button", { name: "Next period" }).click();
   await page.getByRole("button", { name: "Previous period" }).click();
 
@@ -251,7 +257,7 @@ test("exhaustive UI (parent + nounou) and 5 business flows", async ({ page }) =>
   await clickTaskToggle(page, taskRow.getByRole("button", { name: /rouvrir/i }));
 
   const navLinks = [
-    { name: /aujourd/i, url: "**/app/planning" },
+    { name: /aujourd/i, url: "**/app" },
     { name: /planning/i, url: "**/app/planning" },
     { name: /t.*ches/i, url: "**/app/taches" },
     { name: /journal/i, url: "**/app/journal" },
@@ -260,8 +266,9 @@ test("exhaustive UI (parent + nounou) and 5 business flows", async ({ page }) =>
     { name: /r.*glages/i, url: "**/app/parametres" }
   ];
 
+  const bottomNav = page.getByRole("navigation").last();
   for (const link of navLinks) {
-    await Promise.all([page.waitForURL(link.url), page.getByRole("link", { name: link.name }).click()]);
+    await Promise.all([bottomNav.waitFor(), page.waitForURL(link.url), bottomNav.getByRole("link", { name: link.name }).click()]);
   }
 
   const employeeEmail = `employee+${Date.now()}@example.com`;
@@ -278,6 +285,7 @@ test("exhaustive UI (parent + nounou) and 5 business flows", async ({ page }) =>
 
   await login(page, employeeEmail, employeePassword || "");
   await page.getByRole("button", { name: /mode/i }).click();
+  await page.goto("/app/planning");
 
   await expect(page.getByRole("button", { name: /configurer/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /ajouter une plage/i })).toHaveCount(0);

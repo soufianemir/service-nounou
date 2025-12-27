@@ -12,13 +12,13 @@
 | /politique-confidentialite | page | public | GET | Privacy policy content |
 | /notre-role | page | public | GET | About/role explanation |
 | /cookies | page | public | GET | Cookies policy content |
-| /app | page | session | GET | Redirect to /app/planning |
+| /app | page | session | GET | Today dashboard (planning + tasks + courses) |
 | /app/planning | page | session | GET | Planning calendar (requires session) |
-| /app/taches | page | session | GET | Tasks area (placeholder) |
-| /app/journal | page | session | GET | Journal area (placeholder) |
-| /app/courses | page | session | GET | Shopping list area (placeholder) |
-| /app/notifications | page | session | GET | Alerts area (placeholder) |
-| /app/parametres | page | session | GET | Settings area (placeholder) |
+| /app/taches | page | session | GET | Task list with due dates |
+| /app/journal | page | session | GET | Journal entry list |
+| /app/courses | page | session | GET | Shopping list items |
+| /app/notifications | page | session | GET | In-app notifications list |
+| /app/parametres | page | session | GET | Account info + employee onboarding (parent) |
 | /api/auth/signup | api | public | POST | Create household + user, set session cookie, redirect /app |
 | /api/auth/login | api | public | POST | Authenticate, set session cookie, redirect /app |
 | /api/auth/logout | api | session | POST | Clear session cookie, redirect / |
