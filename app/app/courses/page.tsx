@@ -13,6 +13,10 @@ export default async function CoursesPage() {
   });
 
   return (
-    <CoursesClient role={membership.role} timezone={tz} initialItems={items} />
+    <CoursesClient
+      role={membership.role}
+      timezone={tz}
+      initialItems={items.map((i) => ({ ...i, createdAt: i.createdAt.toISOString() }))}
+    />
   );
 }

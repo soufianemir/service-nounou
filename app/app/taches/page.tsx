@@ -13,6 +13,10 @@ export default async function TachesPage() {
   });
 
   return (
-    <TasksClient role={membership.role} timezone={tz} initialTasks={tasks} />
+    <TasksClient
+      role={membership.role}
+      timezone={tz}
+      initialTasks={tasks.map((t) => ({ ...t, dueAt: t.dueAt ? t.dueAt.toISOString() : null }))}
+    />
   );
 }
