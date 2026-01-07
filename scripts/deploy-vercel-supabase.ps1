@@ -142,7 +142,7 @@ if (-not $RuntimeDatabaseUrl) {
   if ($SupabasePoolerHost) {
     $poolerUser = "$SupabaseDbUser.$SupabaseRef"
     $RuntimeDatabaseUrl = "postgresql://$poolerUser`:$dbPassEncoded@$SupabasePoolerHost`:$SupabasePoolerPort/$SupabaseDbName?schema=public&sslmode=require&pgbouncer=true"
-    Write-Host "Runtime DB URL: using Supabase pooler ($SupabasePoolerHost:$SupabasePoolerPort)."
+    Write-Host "Runtime DB URL: using Supabase pooler ($($SupabasePoolerHost):$SupabasePoolerPort)."
   } else {
     $RuntimeDatabaseUrl = Read-Host "Supabase pooler DATABASE_URL (recommended for Vercel)"
     if (-not $RuntimeDatabaseUrl) {
