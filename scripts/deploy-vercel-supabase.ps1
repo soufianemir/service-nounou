@@ -51,7 +51,11 @@ function Invoke-Vercel([string[]]$args, [string]$token, [string]$scope = "") {
 function Set-VercelEnv([string]$key, [string]$value, [string]$token, [string]$scope = "") {
   if ([string]::IsNullOrWhiteSpace($value)) { return }
   try {
-    Invoke-Vercel @("env","rm",$key,"production","--yes") $token $scope | Out-Null
+    $finalRm = @("env","rm",$key,"production")
+    if ($scope) { $finalRm += @("--scope", $scope) }
+    $finalRm += @("--token", $token)
+    $cmdRm = "vercel " + (($finalRm | ForEach-Object { Quote-CmdArg $_ }) -join " ")
+    cmd /c ("echo y | " + $cmdRm) | Out-Null
   } catch {
     # ignore if not present
   }
@@ -60,7 +64,7 @@ function Set-VercelEnv([string]$key, [string]$value, [string]$token, [string]$sc
   try {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($tmp, ($value + "`n"), $utf8NoBom)
-    $final = @("env","add",$key,"production","--yes")
+    $final = @("env","add",$key,"production")
     if ($scope) { $final += @("--scope", $scope) }
     $final += @("--token", $token)
     $cmdLine = "vercel " + (($final | ForEach-Object { Quote-CmdArg $_ }) -join " ") + " < " + (Quote-CmdArg $tmp)
