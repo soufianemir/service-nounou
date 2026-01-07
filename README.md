@@ -5,7 +5,7 @@ SaaS Next.js pour le carnet de liaison famille + nounou: planning, taches, journ
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind
-- Prisma + PostgreSQL (Supabase compatible)
+- Prisma + SQLite (local) / PostgreSQL (production, Supabase compatible)
 - Auth email + mot de passe, session JWT en cookie HttpOnly
 - PWA (manifest + icones)
 - CSV import pour planning/taches/courses
@@ -14,7 +14,7 @@ SaaS Next.js pour le carnet de liaison famille + nounou: planning, taches, journ
 
 Prerequis:
 - Node.js 18+
-- PostgreSQL local ou Supabase
+- SQLite local (par defaut) ou PostgreSQL/Supabase
 
 1) Installer les dependances
 ```bash
@@ -25,7 +25,7 @@ npm install
 - Copier `.env.example` vers `.env`
 - Renseigner `DATABASE_URL` et `SESSION_JWT_SECRET`
 
-3) Creer le schema
+3) Creer le schema (SQLite local)
 ```bash
 npx prisma db push
 ```
@@ -59,13 +59,14 @@ Colonnes supportees:
 1) Creer un projet Supabase, recuperer l'URL Postgres.
 2) Dans Vercel -> Environment Variables:
    - `DATABASE_URL` (connection string Supabase)
+   - `PRISMA_SCHEMA=prisma/schema.postgres.prisma`
    - `SESSION_JWT_SECRET` (long, random)
    - `SESSION_COOKIE_NAME` (ex: `cn_session`)
    - `SESSION_COOKIE_SECURE=true`
    - `NEXT_PUBLIC_BASE_URL` (URL Vercel)
 3) Initialiser la base:
-   - Option simple: `npx prisma db push` (une fois)
-   - Option robuste: creer une migration puis `prisma migrate deploy`
+   - Option simple: `npx prisma db push --schema prisma/schema.postgres.prisma` (une fois)
+   - Option robuste: creer une migration puis `prisma migrate deploy --schema prisma/schema.postgres.prisma`
 4) Deploy sur Vercel.
 
 ## Notes production
