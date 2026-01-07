@@ -44,6 +44,15 @@ Comptes demo:
 npm run dev
 ```
 
+## Comptes fixes (Mir + Aurore)
+
+Pour creer/mettre a jour les comptes demandes sans passer par l'inscription :
+```bash
+npm run accounts:mir
+```
+
+Cela cree un foyer "Famille Mir" si besoin et rattache la nounou.
+
 ## CSV import (planning, taches, courses)
 
 Des modeles sont disponibles dans `public/templates/`:

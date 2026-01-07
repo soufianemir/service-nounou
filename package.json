@@ -12,6 +12,7 @@
     "prisma:generate": "node scripts/prisma-generate.mjs",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "accounts:mir": "tsx scripts/ensure-mir-accounts.ts",
     "seed": "tsx prisma/seed.ts",
     "setup": "npm run prisma:generate && npm run prisma:push && npm run seed",
     "prisma:push": "prisma db push"

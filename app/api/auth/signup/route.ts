@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signSessionJwt, setSessionCookie } from "@/lib/auth";
 import { signUpSchema } from "@/lib/validations";
+import { defaultWeeklySchedule } from "@/lib/schedule";
 
 export async function POST(req: Request) {
   const form = await req.formData();
@@ -31,15 +32,7 @@ export async function POST(req: Request) {
       timezone: "Europe/Paris",
       notificationsEnabled: true,
       // Planning fixe (hebdo) : modifiable ensuite depuis Paramètres.
-      workScheduleWeekly: {
-        mon: { enabled: true, start: "09:00", end: "18:00" },
-        tue: { enabled: true, start: "09:00", end: "18:00" },
-        wed: { enabled: true, start: "09:00", end: "18:00" },
-        thu: { enabled: true, start: "09:00", end: "18:00" },
-        fri: { enabled: true, start: "09:00", end: "18:00" },
-        sat: { enabled: false, start: "", end: "" },
-        sun: { enabled: false, start: "", end: "" }
-      },
+      workScheduleWeekly: defaultWeeklySchedule(),
       workScheduleExceptions: []
     }
   });
