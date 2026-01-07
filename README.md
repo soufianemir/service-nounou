@@ -69,6 +69,19 @@ Colonnes supportees:
    - Option robuste: creer une migration puis `prisma migrate deploy --schema prisma/schema.postgres.prisma`
 4) Deploy sur Vercel.
 
+### Deploiement CLI (script)
+
+Le script `scripts/deploy-vercel-supabase.ps1` te guide et ne stocke pas les secrets.
+
+Exemple:
+```powershell
+.\scripts\deploy-vercel-supabase.ps1 -ProjectName "Gestion" -SupabaseRef "cloxazniuqnqcbordvhd" -Seed
+```
+
+Optionnel:
+- `-RuntimeDatabaseUrl` pour utiliser le pooler Supabase en runtime
+- `-VercelScope` si ton projet est dans une team Vercel
+
 ## Notes production
 
 - Le stockage fichiers local est **desactive par defaut** (serverless). Si tu veux des pieces jointes, ajoute un storage externe (ex: Supabase Storage) et integre-le.
