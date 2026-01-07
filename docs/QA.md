@@ -10,7 +10,7 @@
 
 ## Environment
 - Local env file created: .env (copied from .env.example).
-- Database: SQLite at data/app.db.
+- Database: Supabase Postgres (DATABASE_URL).
 
 ## Static checks
 - npm.cmd ci
@@ -20,8 +20,6 @@
 - npx.cmd prisma generate
   - Result: Generated Prisma Client (v6.19.1) to node_modules/@prisma/client.
 - npm.cmd run prisma:push
-  - Result: Error: Schema engine error (with DATABASE_URL=file:./data/app.db).
-- DATABASE_URL=file:C:\Users\s.mir\Projects\service-nounou_v2\data\app.db npx.cmd prisma db push --skip-generate
   - Result: Your database is now in sync with your Prisma schema.
 - npm.cmd run lint
   - Result: Next.js prompts for ESLint config selection (interactive), lint not executed.

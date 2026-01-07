@@ -26,14 +26,13 @@ if (-Not $SkipInstall) {
 }
 
 Write-Host "Preparing folders..."
-New-Item -ItemType Directory -Force -Path "data" | Out-Null
 New-Item -ItemType Directory -Force -Path "storage" | Out-Null
 New-Item -ItemType Directory -Force -Path "prisma" | Out-Null
 
 Write-Host "Prisma generate..."
 npx prisma generate
 
-Write-Host "Prisma db push (SQLite schema)..."
+Write-Host "Prisma db push (Postgres schema)..."
 npx prisma db push
 
 Write-Host "Seeding demo data..."

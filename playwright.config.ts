@@ -1,8 +1,9 @@
-import path from "path";
 import { defineConfig } from "@playwright/test";
 
-const dbPath = path.join(process.cwd(), "data", "app.db").replace(/\\/g, "/");
-const databaseUrl = `file:${dbPath}`;
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required to run Playwright tests.");
+}
 const port = process.env.PLAYWRIGHT_PORT ?? "3000";
 const baseURL = `http://localhost:${port}`;
 

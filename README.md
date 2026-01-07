@@ -5,7 +5,7 @@ SaaS Next.js pour le carnet de liaison famille + nounou: planning, taches, journ
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind
-- Prisma + SQLite (local) / PostgreSQL (production, Supabase compatible)
+- Prisma + PostgreSQL (Supabase compatible)
 - Auth email + mot de passe, session JWT en cookie HttpOnly
 - PWA (manifest + icones)
 - CSV import pour planning/taches/courses
@@ -14,7 +14,7 @@ SaaS Next.js pour le carnet de liaison famille + nounou: planning, taches, journ
 
 Prerequis:
 - Node.js 18+
-- SQLite local (par defaut) ou PostgreSQL/Supabase
+- PostgreSQL/Supabase
 
 1) Installer les dependances
 ```bash
@@ -23,12 +23,13 @@ npm install
 
 2) Configurer l'environnement
 - Copier `.env.example` vers `.env`
-- Renseigner `DATABASE_URL` et `SESSION_JWT_SECRET`
+- Renseigner `DATABASE_URL` (pooler avec `pgbouncer=true`) + `SESSION_JWT_SECRET`
 
-3) Creer le schema (SQLite local)
+3) Creer le schema (Postgres)
 ```bash
 npx prisma db push
 ```
+Si ton `DATABASE_URL` pointe sur le pooler, utilise temporairement l'URL directe pour le `db push`.
 
 4) Charger les donnees de demo
 ```bash
@@ -67,20 +68,20 @@ Colonnes supportees:
 
 1) Creer un projet Supabase, recuperer l'URL Postgres.
 2) Dans Vercel -> Environment Variables:
-   - `DATABASE_URL` (connection string Supabase)
-   - `PRISMA_SCHEMA=prisma/schema.postgres.prisma`
+   - `DATABASE_URL` (pooler Supabase avec `pgbouncer=true`)
    - `SESSION_JWT_SECRET` (long, random)
    - `SESSION_COOKIE_NAME` (ex: `cn_session`)
    - `SESSION_COOKIE_SECURE=true`
    - `NEXT_PUBLIC_BASE_URL` (URL Vercel)
 3) Initialiser la base:
-   - Option simple: `npx prisma db push --schema prisma/schema.postgres.prisma` (une fois)
-   - Option robuste: creer une migration puis `prisma migrate deploy --schema prisma/schema.postgres.prisma`
+   - Option simple: `npx prisma db push` (une fois)
+   - Option robuste: creer une migration puis `prisma migrate deploy`
 4) Deploy sur Vercel.
 
 ### Deploiement CLI (script)
 
 Le script `scripts/deploy-vercel-supabase.ps1` te guide et ne stocke pas les secrets.
+Tu peux fournir `SUPABASE_DB_PASSWORD` et `VERCEL_TOKEN` dans l'environnement pour eviter les prompts.
 
 Exemple:
 ```powershell
@@ -90,6 +91,8 @@ Exemple:
 Optionnel:
 - `-RuntimeDatabaseUrl` pour utiliser le pooler Supabase en runtime
 - `-VercelScope` si ton projet est dans une team Vercel
+
+Note: avec Prisma + pooler Supabase, ajoute `pgbouncer=true` au `DATABASE_URL` pour eviter les erreurs de prepared statements.
 
 ## Notes production
 

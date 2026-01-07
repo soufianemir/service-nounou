@@ -20,9 +20,7 @@ $excludeDirs = @(
 $excludeFilePatterns = @(
   ".env",
   ".env.local",
-  "*.log",
-  "*.sqlite",
-  "*.sqlite3"
+  "*.log"
 )
 
 function Is-ExcludedPath([string]$fullPath) {
