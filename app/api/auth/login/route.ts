@@ -16,7 +16,8 @@ export async function POST(req: Request) {
   }
 
   const { email, password } = parsed.data;
-  const user = await prisma.user.findUnique({ where: { email } });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (!user) {
     return NextResponse.redirect(new URL("/connexion?error=auth", req.url));
   }
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
 
   const token = await signSessionJwt({
     sub: user.id,
-    email: user.email,
+      email: user.email,
     householdId: membership.householdId,
     membershipId: membership.id,
     role: membership.role

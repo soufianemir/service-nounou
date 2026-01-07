@@ -18,8 +18,9 @@ export async function POST(req: Request) {
   }
 
   const { name, email, password } = parsed.data;
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existing) {
     return NextResponse.redirect(new URL("/inscription?error=exists", req.url));
   }
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.create({
     data: {
-      email,
+      email: normalizedEmail,
       passwordHash
     }
   });
