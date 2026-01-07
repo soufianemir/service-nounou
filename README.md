@@ -71,5 +71,5 @@ Colonnes supportees:
 
 ## Notes production
 
-- Le stockage fichiers local n'est pas adapte a Vercel. Utiliser un storage externe si besoin.
+- Le stockage fichiers local est **desactive par defaut** (serverless). Si tu veux des pieces jointes, ajoute un storage externe (ex: Supabase Storage) et integre-le.
 - L'import CSV cree les taches/courses en masse et rafraichit le planning.

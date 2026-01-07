@@ -13,6 +13,9 @@ function safeExt(mime: string): string | null {
 }
 
 export async function saveReceipt(file: File, householdId: string): Promise<string> {
+  if (!env.FILE_STORAGE_DIR) {
+    throw new Error("Storage disabled (no FILE_STORAGE_DIR).");
+  }
   const ext = safeExt(file.type);
   if (!ext) throw new Error("Unsupported file type");
   if (file.size > MAX_BYTES) throw new Error("File too large");

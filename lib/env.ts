@@ -19,8 +19,8 @@ const EnvSchema = z.object({
   // App
   NEXT_PUBLIC_BASE_URL: z.string().optional().default("http://localhost:3000"),
 
-  // Storage
-  FILE_STORAGE_DIR: z.string().default("./storage"),
+  // Storage (disabled by default in serverless)
+  FILE_STORAGE_DIR: z.string().optional(),
 
   // Cron / inbound verification
 });
