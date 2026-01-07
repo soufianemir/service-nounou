@@ -152,25 +152,28 @@ export async function POST(req: Request) {
     const bucketValue = getCell(row, headerIndex.bucket);
 
     let dueAt: Date | null = null;
-    if (dateValue) {
-      const ymd = normalizeYmdMaybe(dateValue);
-      if (!ymd) {
-        errors.push({ row: line, error: "invalid_date" });
-        return;
-      }
-
-      let time = "14:30";
-      const bucketDefault = bucketValue ? defaultTimeFromBucket(bucketValue) : null;
-      const normalizedTime = timeValue ? normalizeTimeMaybe(timeValue) : null;
-      if (normalizedTime) {
-        time = normalizedTime;
-      } else if (bucketDefault) {
-        time = bucketDefault;
-      }
-      const hour = Number(time.slice(0, 2));
-      const minute = Number(time.slice(3, 5));
-      dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd, hour, minute, second: 0 });
+    if (!dateValue) {
+      errors.push({ row: line, error: "missing_date" });
+      return;
     }
+
+    const ymd = normalizeYmdMaybe(dateValue);
+    if (!ymd) {
+      errors.push({ row: line, error: "invalid_date" });
+      return;
+    }
+
+    let time = "14:30";
+    const bucketDefault = bucketValue ? defaultTimeFromBucket(bucketValue) : null;
+    const normalizedTime = timeValue ? normalizeTimeMaybe(timeValue) : null;
+    if (normalizedTime) {
+      time = normalizedTime;
+    } else if (bucketDefault) {
+      time = bucketDefault;
+    }
+    const hour = Number(time.slice(0, 2));
+    const minute = Number(time.slice(3, 5));
+    dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd, hour, minute, second: 0 });
 
     created.push({
       householdId: session.householdId,

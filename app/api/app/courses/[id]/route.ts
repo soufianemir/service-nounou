@@ -15,6 +15,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!session) {
     return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
   }
+  if (session.role !== "PARENT") {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
 
   const { id } = await ctx.params;
   const item = await prisma.shoppingItem.findFirst({
@@ -26,14 +29,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const body = await req.json().catch(() => ({}));
   const nextStatus = normalizeStatus(body.status);
-  const canEdit = session.role === "PARENT";
 
   const data: { status?: string; label?: string; qty?: string | null } = {};
   if (nextStatus) data.status = nextStatus;
-  if (canEdit) {
-    if (body.label !== undefined) data.label = String(body.label || "").trim();
-    if (body.qty !== undefined) data.qty = String(body.qty || "").trim() || null;
-  }
+  if (body.label !== undefined) data.label = String(body.label || "").trim();
+  if (body.qty !== undefined) data.qty = String(body.qty || "").trim() || null;
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ ok: false, error: "nothing_to_update" }, { status: 400 });

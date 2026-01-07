@@ -68,15 +68,16 @@ export async function POST(req: Request) {
   const dueYmd = body.dueYmd ? String(body.dueYmd) : null;
   const dueTime = body.dueTime ? String(body.dueTime) : null;
   let dueAt: Date | null = null;
-  if (dueYmd) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueYmd)) {
-      return NextResponse.json({ ok: false, error: "invalid_dueYmd" }, { status: 400 });
-    }
-    const time = dueTime && isValidTime(dueTime) ? dueTime : "14:30";
-    const hour = Number(time.slice(0, 2));
-    const minute = Number(time.slice(3, 5));
-    dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd: dueYmd, hour, minute, second: 0 });
+  if (!dueYmd) {
+    return NextResponse.json({ ok: false, error: "dueYmd_required" }, { status: 400 });
   }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueYmd)) {
+    return NextResponse.json({ ok: false, error: "invalid_dueYmd" }, { status: 400 });
+  }
+  const time = dueTime && isValidTime(dueTime) ? dueTime : "14:30";
+  const hour = Number(time.slice(0, 2));
+  const minute = Number(time.slice(3, 5));
+  dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd: dueYmd, hour, minute, second: 0 });
 
   if (!title) {
     return NextResponse.json({ ok: false, error: "Titre requis" }, { status: 400 });
