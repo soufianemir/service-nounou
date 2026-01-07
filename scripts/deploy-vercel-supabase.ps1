@@ -22,7 +22,8 @@ function Get-PlainText([System.Security.SecureString]$secure) {
 
 function New-JwtSecret {
   $bytes = New-Object byte[] 32
-  [Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+  $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+  $rng.GetBytes($bytes)
   return -join ($bytes | ForEach-Object { $_.ToString("x2") })
 }
 
@@ -54,7 +55,19 @@ function Set-VercelEnv([string]$key, [string]$value, [string]$token, [string]$sc
   } catch {
     # ignore if not present
   }
-  $value | Invoke-Vercel @("env","add",$key,"production","--yes") $token $scope
+
+  $tmp = Join-Path $env:TEMP ("vercel-env-" + $key + "-" + [Guid]::NewGuid().ToString("n") + ".txt")
+  try {
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tmp, ($value + "`n"), $utf8NoBom)
+    $final = @("env","add",$key,"production","--yes")
+    if ($scope) { $final += @("--scope", $scope) }
+    $final += @("--token", $token)
+    $cmdLine = "vercel " + (($final | ForEach-Object { Quote-CmdArg $_ }) -join " ") + " < " + (Quote-CmdArg $tmp)
+    cmd /c $cmdLine
+  } finally {
+    Remove-Item -Force $tmp -ErrorAction SilentlyContinue
+  }
 }
 
 if (-not $BaseUrl) {
@@ -97,7 +110,8 @@ if ($Seed) {
 }
 
 Write-Host "Linking Vercel project..."
-Invoke-Vercel @("link","--project",$ProjectName,"--yes") $tokenPlain $VercelScope
+Write-Host "When prompted 'Set up and deploy?', answer 'no' (we deploy after env vars are set)."
+Invoke-Vercel @("link","--project",$ProjectName) $tokenPlain $VercelScope
 
 Write-Host "Setting Vercel env vars (production)..."
 Set-VercelEnv "DATABASE_URL" $RuntimeDatabaseUrl $tokenPlain $VercelScope
