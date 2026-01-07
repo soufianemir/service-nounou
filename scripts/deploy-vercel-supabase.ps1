@@ -92,10 +92,19 @@ function Remove-VercelEnv([string]$key, [string]$token, [string]$scope = "") {
 
 function Add-PgbouncerFlag([string]$url) {
   if ([string]::IsNullOrWhiteSpace($url)) { return $url }
-  if ($url -match "pgbouncer=") { return $url }
   if ($url -match "pooler\\.supabase\\.com") {
-    if ($url -match "\\?") { return $url + "&pgbouncer=true" }
-    return $url + "?pgbouncer=true"
+    # Supabase pooler uses PgBouncer. Prisma must disable prepared statements (statement_cache_size=0),
+    # otherwise you can hit: "prepared statement \"s0\" already exists".
+    $out = $url
+
+    foreach ($param in @("pgbouncer=true", "statement_cache_size=0", "connection_limit=1")) {
+      $key = ($param -split "=", 2)[0]
+      if ($out -match ("(^|[?&])" + [regex]::Escape($key) + "=")) { continue }
+      if ($out -match "\\?") { $out = $out + "&" + $param }
+      else { $out = $out + "?" + $param }
+    }
+
+    return $out
   }
   return $url
 }
@@ -153,7 +162,7 @@ if (-not $RuntimeDatabaseUrl) {
 }
 $runtimeWithFlag = Add-PgbouncerFlag $RuntimeDatabaseUrl
 if ($runtimeWithFlag -ne $RuntimeDatabaseUrl) {
-  Write-Host "Applied pgbouncer=true to runtime DATABASE_URL."
+  Write-Host "Applied PgBouncer-safe settings to runtime DATABASE_URL."
   $RuntimeDatabaseUrl = $runtimeWithFlag
 }
 
