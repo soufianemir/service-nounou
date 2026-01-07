@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 export const config = {
-  matcher: ["/app/:path*"]
+  matcher: ["/app/:path*", "/connexion", "/inscription"]
 };
 
 function getKey() {
@@ -12,7 +12,19 @@ function getKey() {
 }
 
 export async function middleware(req: NextRequest) {
-  const cookieName = process.env.SESSION_COOKIE_NAME ?? "cm_session";
+  // Safety-net for stale cached/PWA clients that might POST to public pages.
+  if (req.method === "POST" && req.nextUrl.pathname === "/connexion") {
+    return NextResponse.redirect(new URL("/api/auth/login", req.url), 307);
+  }
+  if (req.method === "POST" && req.nextUrl.pathname === "/inscription") {
+    return NextResponse.redirect(new URL("/api/auth/signup", req.url), 307);
+  }
+
+  if (!req.nextUrl.pathname.startsWith("/app")) {
+    return NextResponse.next();
+  }
+
+  const cookieName = process.env.SESSION_COOKIE_NAME ?? "cn_session";
   const token = req.cookies.get(cookieName)?.value;
 
   if (!token) {
