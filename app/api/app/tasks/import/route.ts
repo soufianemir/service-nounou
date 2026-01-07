@@ -24,13 +24,62 @@ function normalizeStatus(value: string): "TODO" | "DONE" {
 function defaultTimeFromBucket(value: string): string | null {
   const v = value.trim().toLowerCase();
   if (["matin", "am", "morning"].includes(v)) return "09:00";
-  if (["aprem", "apresmidi", "apres-midi", "pm", "afternoon"].includes(v)) return "14:00";
+  if (["aprem", "apresmidi", "apres-midi", "pm", "afternoon"].includes(v)) return "14:30";
   if (["soir", "evening", "night"].includes(v)) return "19:00";
   return null;
 }
 
-function isValidYmd(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+function normalizeTimeMaybe(input: string): string | null {
+  const v = input.trim().toLowerCase();
+  if (!v) return null;
+
+  // Accept "HH:MM", "HH:MM:SS"
+  const mColon = v.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (mColon) {
+    const hh = String(mColon[1]).padStart(2, "0");
+    const mm = String(mColon[2]).padStart(2, "0");
+    const hhmm = `${hh}:${mm}`;
+    return isValidTime(hhmm) ? hhmm : null;
+  }
+
+  // Accept French-style "14h30" or "14h"
+  const mH = v.match(/^(\d{1,2})h(?:(\d{2}))?$/);
+  if (mH) {
+    const hh = String(mH[1]).padStart(2, "0");
+    const mm = String(mH[2] ?? "00").padStart(2, "0");
+    const hhmm = `${hh}:${mm}`;
+    return isValidTime(hhmm) ? hhmm : null;
+  }
+
+  return null;
+}
+
+function normalizeYmdMaybe(input: string): string | null {
+  const v = input.trim();
+  if (!v) return null;
+
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+  // YYYY/MM/DD
+  let m = v.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (m) {
+    const y = m[1];
+    const mo = String(m[2]).padStart(2, "0");
+    const d = String(m[3]).padStart(2, "0");
+    return `${y}-${mo}-${d}`;
+  }
+
+  // DD/MM/YYYY or DD-MM-YYYY
+  m = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (m) {
+    const d = String(m[1]).padStart(2, "0");
+    const mo = String(m[2]).padStart(2, "0");
+    const y = m[3];
+    return `${y}-${mo}-${d}`;
+  }
+
+  return null;
 }
 
 export async function POST(req: Request) {
@@ -97,20 +146,23 @@ export async function POST(req: Request) {
 
     let dueAt: Date | null = null;
     if (dateValue) {
-      if (!isValidYmd(dateValue)) {
+      const ymd = normalizeYmdMaybe(dateValue);
+      if (!ymd) {
         errors.push({ row: line, error: "invalid_date" });
         return;
       }
-      let time = "09:00";
+
+      let time = "14:30";
       const bucketDefault = bucketValue ? defaultTimeFromBucket(bucketValue) : null;
-      if (timeValue && isValidTime(timeValue)) {
-        time = timeValue;
+      const normalizedTime = timeValue ? normalizeTimeMaybe(timeValue) : null;
+      if (normalizedTime) {
+        time = normalizedTime;
       } else if (bucketDefault) {
         time = bucketDefault;
       }
       const hour = Number(time.slice(0, 2));
       const minute = Number(time.slice(3, 5));
-      dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd: dateValue, hour, minute, second: 0 });
+      dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd, hour, minute, second: 0 });
     }
 
     created.push({

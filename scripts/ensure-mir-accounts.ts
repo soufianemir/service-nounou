@@ -80,6 +80,14 @@ async function main() {
       }
     });
     householdId = household.id;
+  } else {
+    await prisma.household.update({
+      where: { id: householdId },
+      data: {
+        timezone: "Europe/Paris",
+        workScheduleWeekly: defaultWeeklySchedule()
+      }
+    });
   }
 
   await ensureMembership({

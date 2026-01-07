@@ -38,12 +38,12 @@ function compareTime(a: string, b: string): number {
 }
 
 export function defaultWeeklySchedule(): WeeklySlot[] {
-  // Mon..Fri 09:00-18:00, weekend off.
+  // Mon..Fri 14:30-19:30, weekend off.
   return [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
     weekday,
     enabled: weekday <= 4,
-    start: "09:00",
-    end: "18:00"
+    start: "14:30",
+    end: "19:30"
   }));
 }
 
@@ -55,8 +55,8 @@ export function parseWeeklySchedule(raw: unknown): WeeklySlot[] {
     const weekday = Number(o?.weekday);
     if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) continue;
     const enabled = Boolean(o?.enabled);
-    const start = typeof o?.start === "string" ? o.start : "09:00";
-    const end = typeof o?.end === "string" ? o.end : "18:00";
+    const start = typeof o?.start === "string" ? o.start : "14:30";
+    const end = typeof o?.end === "string" ? o.end : "19:30";
     byDay.set(weekday, { weekday, enabled, start, end });
   }
   const out = [0, 1, 2, 3, 4, 5, 6].map((d) => byDay.get(d) ?? defaultWeeklySchedule()[d]);
