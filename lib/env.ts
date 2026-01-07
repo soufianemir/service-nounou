@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const EnvSchema = z.object({
   NODE_ENV: z.string().default("development"),
-  DATABASE_URL: z.string().default("file:./data/app.db"),
+  DATABASE_URL: z.string().min(1),
 
   // Auth
   SESSION_JWT_SECRET: z.string().min(16),

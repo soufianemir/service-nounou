@@ -1,82 +1,74 @@
-# CarnetNounou (MVP)
+# CarnetNounou (Production Ready)
 
-SaaS Next.js (App Router) — **carnet de liaison premium** entre **famille** et **nounou** :
-planning & horaires, tâches, journal de journée (repas/sieste/changes/humeur/activités), courses, dépenses/justificatifs,
-notifications internes + historique.
-
-> Objectif produit : réduire la charge mentale des parents et garder une trace claire du quotidien.
+SaaS Next.js pour le carnet de liaison famille + nounou: planning, taches, journal, courses, alertes.
 
 ## Stack
 
-- Next.js + TypeScript + Tailwind
-- Prisma + SQLite (fichier local)
-- Auth : email + mot de passe, session JWT en cookie HttpOnly
-- RBAC minimal : Parent / Employé (nounou)
-- Logs d’audit (MVP) + export JSON
+- Next.js (App Router) + TypeScript + Tailwind
+- Prisma + PostgreSQL (Supabase compatible)
+- Auth email + mot de passe, session JWT en cookie HttpOnly
+- PWA (manifest + icones)
+- CSV import pour planning/taches/courses
 
-## Démarrage (local)
+## Demarrage local
 
-Pré-requis :
-- Node.js 18+ (recommandé)
-- npm
+Prerequis:
+- Node.js 18+
+- PostgreSQL local ou Supabase
 
-1) Installer les dépendances
+1) Installer les dependances
 ```bash
 npm install
 ```
 
-2) Configurer l’environnement
+2) Configurer l'environnement
 - Copier `.env.example` vers `.env`
-- Ajuster les valeurs si besoin
+- Renseigner `DATABASE_URL` et `SESSION_JWT_SECRET`
 
-3) Initialiser la base (SQLite)
+3) Creer le schema
 ```bash
-npx prisma generate
 npx prisma db push
 ```
 
-4) Injecter les **données de démonstration** (famille + nounou)
+4) Charger les donnees de demo
 ```bash
-npm run db:seed
+npm run seed
 ```
 
-Comptes démo (local) :
-- Parent : `parent@demo.nounou` / `Demo1234!`
-- Nounou : `nounou@demo.nounou` / `Demo1234!`
+Comptes demo:
+- Parent: `parent@demo.nounou` / `Demo1234!`
+- Nounou: `nounou@demo.nounou` / `Demo1234!`
 
-5) Lancer l’app
+5) Lancer l'app
 ```bash
 npm run dev
 ```
 
-## Routes principales
+## CSV import (planning, taches, courses)
 
-Public :
-- `/` (home)
-- `/notre-role`
-- `/tarifs`
-- `/cgu`
-- `/mentions-legales`
-- `/politique-confidentialite`
-- `/cookies`
-- `/contact`
+Des modeles sont disponibles dans `public/templates/`:
+- `tasks.csv` pour planning + taches
+- `courses.csv` pour courses
 
-Auth :
-- `/connexion`
-- `/inscription`
+Colonnes supportees:
+- Taches: `title|titre|tache`, `description`, `date (YYYY-MM-DD)`, `time (HH:MM)`, `status`
+- Courses: `label|libelle`, `qty`, `status`
 
-App (protégé) :
-- `/app` (Aujourd’hui)
-- `/app/taches`
-- `/app/planning`
-- `/app/journal`
-- `/app/courses`
-- `/app/notifications` (Alertes)
-- `/app/parametres`
+## Deploiement Vercel + Supabase (gratuit)
 
-## Notes conformité (MVP)
+1) Creer un projet Supabase, recuperer l'URL Postgres.
+2) Dans Vercel -> Environment Variables:
+   - `DATABASE_URL` (connection string Supabase)
+   - `SESSION_JWT_SECRET` (long, random)
+   - `SESSION_COOKIE_NAME` (ex: `cn_session`)
+   - `SESSION_COOKIE_SECURE=true`
+   - `NEXT_PUBLIC_BASE_URL` (URL Vercel)
+3) Initialiser la base:
+   - Option simple: `npx prisma db push` (une fois)
+   - Option robuste: creer une migration puis `prisma migrate deploy`
+4) Deploy sur Vercel.
 
-- Les pages légales contiennent des placeholders à compléter avant mise en production.
-- Les notifications sont **internes à l’app** (centre + badge).
-  Pour des “vraies push” iOS/Android : la base est prête (PWA/wrapper), il faudra ajouter Web Push ou Capacitor Push (plus tard).
-- Stockage fichiers (journal / justificatifs) : local (MVP). En production : chiffrement, contrôle d’accès, rétention, sauvegardes.
+## Notes production
+
+- Le stockage fichiers local n'est pas adapte a Vercel. Utiliser un storage externe si besoin.
+- L'import CSV cree les taches/courses en masse et rafraichit le planning.

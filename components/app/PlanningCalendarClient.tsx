@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { CsvImportPanel } from "@/components/app/CsvImportPanel";
 import { cn } from "@/lib/utils";
 import type { ScheduleException, WeeklySlot } from "@/lib/schedule";
 import { computeWorkSegmentsForDate, isValidTime } from "@/lib/schedule";
@@ -109,18 +110,33 @@ export function PlanningCalendarClient(props: {
     return { from, to };
   }, [view, ymd]);
 
+  const fetchTasksForRange = useCallback(async (from: string, to: string) => {
+    const u = new URL("/api/app/tasks", window.location.origin);
+    u.searchParams.set("fromYmd", from);
+    u.searchParams.set("toYmd", to);
+    const res = await fetch(u.toString(), { headers: { Accept: "application/json" } });
+    const json = await res.json().catch(() => ({ tasks: [] }));
+    return Array.isArray(json?.tasks) ? json.tasks : [];
+  }, []);
+
+  const refreshTasks = useCallback(async () => {
+    setTasksLoading(true);
+    try {
+      const next = await fetchTasksForRange(range.from, range.to);
+      setTasks(next);
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [fetchTasksForRange, range.from, range.to]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setTasksLoading(true);
       try {
-        const u = new URL("/api/app/tasks", window.location.origin);
-        u.searchParams.set("fromYmd", range.from);
-        u.searchParams.set("toYmd", range.to);
-        const res = await fetch(u.toString(), { headers: { Accept: "application/json" } });
-        const json = await res.json().catch(() => ({ tasks: [] }));
+        const next = await fetchTasksForRange(range.from, range.to);
         if (cancelled) return;
-        setTasks(Array.isArray(json?.tasks) ? json.tasks : []);
+        setTasks(next);
       } finally {
         if (!cancelled) setTasksLoading(false);
       }
@@ -128,7 +144,7 @@ export function PlanningCalendarClient(props: {
     return () => {
       cancelled = true;
     };
-  }, [range.from, range.to]);
+  }, [fetchTasksForRange, range.from, range.to]);
 
   const tasksByDay = useMemo(() => {
     const map = new Map<string, TaskLite[]>();
@@ -235,7 +251,12 @@ export function PlanningCalendarClient(props: {
   const [taskSaving, setTaskSaving] = useState(false);
   const [taskErr, setTaskErr] = useState<string | null>(null);
 
-  function openTask(bucket: "matin" | "aprem" | "soir" = "aprem") {
+  function openTask(bucket: "matin" | "aprem" | "soir" = "aprem", targetYmd?: string) {
+    const nextYmd = targetYmd && /^\d{4}-\d{2}-\d{2}$/.test(targetYmd) ? targetYmd : ymd;
+    if (nextYmd !== ymd) {
+      setYmd(nextYmd);
+      pushUrl({ ymd: nextYmd, view });
+    }
     const defaults = bucket === "matin" ? "09:00" : bucket === "soir" ? "19:00" : "14:00";
     setTaskModal({ title: "", description: "", time: defaults, bucket });
   }
@@ -270,13 +291,7 @@ export function PlanningCalendarClient(props: {
         return;
       }
       setTaskModal(null);
-      // Re-fetch tasks for the current range (keeps UI responsive without full refresh).
-      const u = new URL("/api/app/tasks", window.location.origin);
-      u.searchParams.set("fromYmd", range.from);
-      u.searchParams.set("toYmd", range.to);
-      const r2 = await fetch(u.toString(), { headers: { Accept: "application/json" } });
-      const j2 = await r2.json().catch(() => ({ tasks: [] }));
-      setTasks(Array.isArray(j2?.tasks) ? j2.tasks : []);
+      await refreshTasks();
     } finally {
       setTaskSaving(false);
     }
@@ -405,18 +420,28 @@ export function PlanningCalendarClient(props: {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant={view === "day" ? "default" : "outline"} onClick={() => setMode("day")}
-            >Jour</Button
-          >
-          <Button variant={view === "week" ? "default" : "outline"} onClick={() => setMode("week")}
-            >Semaine</Button
-          >
-          <Button variant={view === "month" ? "default" : "outline"} onClick={() => setMode("month")}
-            >Mois</Button
-          >
-        </div>
+      <div className="flex items-center gap-2">
+        <Button variant={view === "day" ? "default" : "outline"} onClick={() => setMode("day")}
+          >Jour</Button
+        >
+        <Button variant={view === "week" ? "default" : "outline"} onClick={() => setMode("week")}
+          >Semaine</Button
+        >
+        <Button variant={view === "month" ? "default" : "outline"} onClick={() => setMode("month")}
+          >Mois</Button
+        >
       </div>
+    </div>
+
+      {canEdit && (
+        <CsvImportPanel
+          title="Importer des taches (CSV)"
+          description="Colonnes: titre, description, date (YYYY-MM-DD), heure (HH:MM), status."
+          endpoint="/api/app/tasks/import"
+          sampleHref="/templates/tasks.csv"
+          onSuccess={refreshTasks}
+        />
+      )}
 
       {canEdit && (
         <Card className="p-4">
@@ -627,6 +652,7 @@ export function PlanningCalendarClient(props: {
                 exceptions: props.exceptions
               }).segments;
               const dayList = tasksByDay.get(d) ?? [];
+              const preview = dayList.slice(0, 3);
               return (
                 <button
                   key={d}
@@ -636,7 +662,8 @@ export function PlanningCalendarClient(props: {
                   )}
                   onClick={() => {
                     setYmd(d);
-                    pushUrl({ ymd: d, view });
+                    setView("day");
+                    pushUrl({ ymd: d, view: "day" });
                   }}
                 >
                   <div className="text-sm font-semibold">{d.slice(-2)}</div>
@@ -652,8 +679,25 @@ export function PlanningCalendarClient(props: {
                       ))
                     )}
                     {segs.length > 2 ? <div>+{segs.length - 2} plage(s)</div> : null}
-                    {dayList.length ? <div className="mt-1">{dayList.length} tâche(s)</div> : null}
+                    {dayList.length ? <div className="mt-1">{dayList.length} tache(s)</div> : null}
                   </div>
+                  {preview.length ? (
+                    <div className="mt-2 space-y-1 text-[11px]">
+                      {preview.map((t) => (
+                        <div
+                          key={t.id}
+                          className={cn("truncate", t.status === "DONE" && "line-through text-mutedForeground")}
+                        >
+                          {t.title}
+                        </div>
+                      ))}
+                      {dayList.length > preview.length ? (
+                        <div className="text-[10px] text-mutedForeground">
+                          +{dayList.length - preview.length} autres
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </button>
               );
             })}
@@ -678,6 +722,7 @@ export function PlanningCalendarClient(props: {
               }).segments;
               const worked = segs.length > 0;
               const dayList = tasksByDay.get(d) ?? [];
+              const preview = dayList.slice(0, 1);
               return (
                 <button
                   key={d}
@@ -697,6 +742,9 @@ export function PlanningCalendarClient(props: {
                     <div className="text-xs font-semibold">{d.slice(-2)}</div>
                     {dayList.length ? <Badge>{dayList.length}</Badge> : null}
                   </div>
+                  {preview.length ? (
+                    <div className="mt-1 truncate text-[10px] text-mutedForeground">{preview[0].title}</div>
+                  ) : null}
                   {worked ? (
                     <div className="mt-2 text-xs text-mutedForeground">
                       {segs[0].start}–{segs[0].end}
