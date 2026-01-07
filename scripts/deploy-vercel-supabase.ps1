@@ -6,6 +6,10 @@ param(
   [string]$SupabaseRef,
   [string]$SupabaseDbUser = "postgres",
   [string]$SupabaseDbName = "postgres",
+  # Supabase pooler host depends on the region of your project.
+  # Default is EU (Paris). You can copy the exact value from Supabase → Settings → Database → Connection string.
+  [string]$SupabasePoolerHost = "aws-1-eu-west-3.pooler.supabase.com",
+  [int]$SupabasePoolerPort = 6543,
   [string]$RuntimeDatabaseUrl = "",
   [string]$BaseUrl = "",
   [string]$VercelScope = "",
@@ -96,8 +100,21 @@ function Add-PgbouncerFlag([string]$url) {
   return $url
 }
 
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$linkedProjectName = $null
+try {
+  $vercelProjectFile = Join-Path $repoRoot ".vercel\project.json"
+  if (Test-Path $vercelProjectFile) {
+    $linked = (Get-Content $vercelProjectFile -Raw | ConvertFrom-Json)
+    if ($linked.projectName) { $linkedProjectName = [string]$linked.projectName }
+  }
+} catch {
+  $linkedProjectName = $null
+}
+
 if (-not $BaseUrl) {
-  $slug = $ProjectName.ToLower().Replace(" ", "-")
+  $slugSource = if ($linkedProjectName) { $linkedProjectName } else { $ProjectName }
+  $slug = $slugSource.ToLower().Replace(" ", "-")
   $BaseUrl = "https://$slug.vercel.app"
 }
 
@@ -122,10 +139,16 @@ $dbPassEncoded = [uri]::EscapeDataString($dbPassPlain)
 $directUrl = "postgresql://$SupabaseDbUser`:$dbPassEncoded@db.$SupabaseRef.supabase.co:5432/$SupabaseDbName?schema=public&sslmode=require"
 
 if (-not $RuntimeDatabaseUrl) {
-  $RuntimeDatabaseUrl = Read-Host "Supabase pooler DATABASE_URL (recommended for Vercel)"
-  if (-not $RuntimeDatabaseUrl) {
-    $RuntimeDatabaseUrl = $directUrl
-    Write-Host "Runtime DB URL is using direct connection (not recommended for serverless)."
+  if ($SupabasePoolerHost) {
+    $poolerUser = "$SupabaseDbUser.$SupabaseRef"
+    $RuntimeDatabaseUrl = "postgresql://$poolerUser`:$dbPassEncoded@$SupabasePoolerHost`:$SupabasePoolerPort/$SupabaseDbName?schema=public&sslmode=require&pgbouncer=true"
+    Write-Host "Runtime DB URL: using Supabase pooler ($SupabasePoolerHost:$SupabasePoolerPort)."
+  } else {
+    $RuntimeDatabaseUrl = Read-Host "Supabase pooler DATABASE_URL (recommended for Vercel)"
+    if (-not $RuntimeDatabaseUrl) {
+      $RuntimeDatabaseUrl = $directUrl
+      Write-Host "Runtime DB URL is using direct connection (not recommended for serverless)."
+    }
   }
 }
 $runtimeWithFlag = Add-PgbouncerFlag $RuntimeDatabaseUrl
