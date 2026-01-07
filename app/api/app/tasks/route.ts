@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dueYmd)) {
       return NextResponse.json({ ok: false, error: "invalid_dueYmd" }, { status: 400 });
     }
-    const time = dueTime && isValidTime(dueTime) ? dueTime : "09:00";
+    const time = dueTime && isValidTime(dueTime) ? dueTime : "14:30";
     const hour = Number(time.slice(0, 2));
     const minute = Number(time.slice(3, 5));
     dueAt = zonedTimeToUtcDate({ timeZone: tz, ymd: dueYmd, hour, minute, second: 0 });

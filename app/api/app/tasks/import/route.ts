@@ -91,6 +91,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
 
+  const employees = await prisma.membership.findMany({
+    where: { householdId: session.householdId, role: "EMPLOYEE" },
+    select: { id: true }
+  });
+  const defaultAssignedToId = employees.length === 1 ? employees[0]!.id : null;
+
   const household = await prisma.household.findUnique({
     where: { id: session.householdId },
     select: { timezone: true }
@@ -126,6 +132,7 @@ export async function POST(req: Request) {
     description?: string | null;
     status: "TODO" | "DONE";
     dueAt?: Date | null;
+    assignedToId?: string | null;
   }> = [];
   const errors: Array<{ row: number; error: string }> = [];
   const MAX_ROWS = 1000;
@@ -170,7 +177,8 @@ export async function POST(req: Request) {
       title,
       description: description || null,
       status,
-      dueAt
+      dueAt,
+      assignedToId: defaultAssignedToId
     });
   });
 

@@ -37,17 +37,27 @@ async function ensureMembership(params: {
   displayName: string;
 }) {
   const { householdId, userId, role, displayName } = params;
+  const permissions =
+    role === "EMPLOYEE"
+      ? {
+          journal: true,
+          tasks: true,
+          shopping: true
+        }
+      : undefined;
   const existing = await prisma.membership.findFirst({
     where: { householdId, userId }
   });
   if (existing) {
+    const data: any = { role, displayName };
+    if (permissions) data.permissions = permissions;
     return prisma.membership.update({
       where: { id: existing.id },
-      data: { role, displayName }
+      data
     });
   }
   return prisma.membership.create({
-    data: { householdId, userId, role, displayName }
+    data: { householdId, userId, role, displayName, permissions }
   });
 }
 
