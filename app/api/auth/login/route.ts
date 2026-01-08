@@ -12,34 +12,34 @@ export async function POST(req: Request) {
 
   const parsed = loginSchema.safeParse(raw);
   if (!parsed.success) {
-    return NextResponse.redirect(new URL("/connexion?error=invalid", req.url));
+    return NextResponse.redirect(new URL("/connexion?error=invalid", req.url), { status: 303 });
   }
 
   const { email, password } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (!user) {
-    return NextResponse.redirect(new URL("/connexion?error=auth", req.url));
+    return NextResponse.redirect(new URL("/connexion?error=auth", req.url), { status: 303 });
   }
 
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
-    return NextResponse.redirect(new URL("/connexion?error=auth", req.url));
+    return NextResponse.redirect(new URL("/connexion?error=auth", req.url), { status: 303 });
   }
 
   const membership = await prisma.membership.findFirst({ where: { userId: user.id } });
   if (!membership) {
-    return NextResponse.redirect(new URL("/connexion?error=nomembership", req.url));
+    return NextResponse.redirect(new URL("/connexion?error=nomembership", req.url), { status: 303 });
   }
 
   const token = await signSessionJwt({
     sub: user.id,
-      email: user.email,
+    email: user.email,
     householdId: membership.householdId,
     membershipId: membership.id,
     role: membership.role
   });
   await setSessionCookie(token);
 
-  return NextResponse.redirect(new URL("/app", req.url));
+  return NextResponse.redirect(new URL("/app", req.url), { status: 303 });
 }

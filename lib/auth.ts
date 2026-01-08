@@ -54,7 +54,15 @@ export async function setSessionCookie(token: string) {
 
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete(env.SESSION_COOKIE_NAME);
+  // Ensure cookie is cleared reliably across environments (path must match).
+  const secure = env.SESSION_COOKIE_SECURE ?? env.NODE_ENV === "production";
+  cookieStore.set(env.SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    expires: new Date(0)
+  });
 }
 
 export async function getSession(): Promise<Session | null> {

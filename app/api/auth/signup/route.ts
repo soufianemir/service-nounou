@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
   const parsed = signUpSchema.safeParse(raw);
   if (!parsed.success) {
-    return NextResponse.redirect(new URL("/inscription?error=invalid", req.url));
+    return NextResponse.redirect(new URL("/inscription?error=invalid", req.url), { status: 303 });
   }
 
   const { name, email, password } = parsed.data;
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existing) {
-    return NextResponse.redirect(new URL("/inscription?error=exists", req.url));
+    return NextResponse.redirect(new URL("/inscription?error=exists", req.url), { status: 303 });
   }
 
   const passwordHash = await hashPassword(password);
@@ -63,5 +63,5 @@ export async function POST(req: Request) {
   });
   await setSessionCookie(token);
 
-  return NextResponse.redirect(new URL("/app", req.url));
+  return NextResponse.redirect(new URL("/app", req.url), { status: 303 });
 }
