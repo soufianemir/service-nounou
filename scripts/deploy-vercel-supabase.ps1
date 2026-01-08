@@ -13,6 +13,7 @@ param(
   [string]$RuntimeDatabaseUrl = "",
   [string]$BaseUrl = "",
   [string]$VercelScope = "",
+  [switch]$UseDirectRuntime,
   [switch]$Seed
 )
 
@@ -148,7 +149,10 @@ $dbPassEncoded = [uri]::EscapeDataString($dbPassPlain)
 $directUrl = "postgresql://$SupabaseDbUser`:$dbPassEncoded@db.$SupabaseRef.supabase.co:5432/$SupabaseDbName?schema=public&sslmode=require"
 
 if (-not $RuntimeDatabaseUrl) {
-  if ($SupabasePoolerHost) {
+  if ($UseDirectRuntime) {
+    $RuntimeDatabaseUrl = $directUrl
+    Write-Host "Runtime DB URL: using Supabase direct connection (db.$SupabaseRef.supabase.co:5432)."
+  } elseif ($SupabasePoolerHost) {
     $poolerUser = "$SupabaseDbUser.$SupabaseRef"
     $RuntimeDatabaseUrl = "postgresql://$poolerUser`:$dbPassEncoded@$SupabasePoolerHost`:$SupabasePoolerPort/$SupabaseDbName?schema=public&sslmode=require&pgbouncer=true"
     Write-Host "Runtime DB URL: using Supabase pooler ($($SupabasePoolerHost):$SupabasePoolerPort)."

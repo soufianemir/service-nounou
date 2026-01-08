@@ -16,10 +16,15 @@ function withPgBouncerSettings(url: string | undefined) {
       u.pathname = "/postgres";
     }
 
+    if (isSupabase) {
+      if (!u.searchParams.has("schema")) u.searchParams.set("schema", "public");
+      if (!u.searchParams.has("sslmode")) u.searchParams.set("sslmode", "require");
+      if (!u.searchParams.has("connection_limit")) u.searchParams.set("connection_limit", "1");
+    }
+
     if (usePgBouncer) {
       if (!u.searchParams.has("pgbouncer")) u.searchParams.set("pgbouncer", "true");
       if (!u.searchParams.has("statement_cache_size")) u.searchParams.set("statement_cache_size", "0");
-      if (!u.searchParams.has("connection_limit")) u.searchParams.set("connection_limit", "1");
     }
 
     return u.toString();
